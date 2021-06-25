@@ -94,6 +94,7 @@ if LIBUKBOOT
 
 		config LIBUKBOOT_INITMIMALLOC
 		bool "Mimalloc"
+		depends on LIBMIMALLOC_INCLUDED
 		select LIBMIMALLOC
 
 		config LIBUKBOOT_INITTINYALLOC

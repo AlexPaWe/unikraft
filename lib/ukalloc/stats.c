@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Authors: Florian Schmidt <florian.schmidt@neclab.eu>
+ * Authors: Simon Kuenzer <simon.kuenzer@neclab.eu>
  *
- * Copyright (c) 2017, NEC Europe Ltd., NEC Corporation. All rights reserved.
+ * Copyright (c) 2020, NEC Laboratories Europe GmbH, NEC Corporation.
+ *                     All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,41 +31,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stddef.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <errno.h>
-#include <uk/alloc.h>
-#include <uk/assert.h>
-#include <uk/essentials.h>
+#include <uk/alloc_impl.h>
 
-void *malloc(size_t size)
+#if CONFIG_LIBUKALLOC_IFSTATS_GLOBAL
+struct uk_alloc_stats _uk_alloc_stats_global = { 0 };
+#endif
+
+void uk_alloc_stats_get(struct uk_alloc *a,
+			struct uk_alloc_stats *dst)
 {
-	return uk_malloc(uk_alloc_get_default(), size);
+	UK_ASSERT(a);
+	UK_ASSERT(dst);
+
+	uk_preempt_disable();
+	memcpy(dst, &a->_stats, sizeof(*dst));
+	uk_preempt_enable();
 }
 
-void *calloc(size_t nmemb, size_t size)
+#if CONFIG_LIBUKALLOC_IFSTATS_GLOBAL
+void uk_alloc_stats_get_global(struct uk_alloc_stats *dst)
 {
-	return uk_calloc(uk_alloc_get_default(), nmemb, size);
-}
+	UK_ASSERT(dst);
 
-void *realloc(void *ptr, size_t size)
-{
-	return uk_realloc(uk_alloc_get_default(), ptr, size);
+	uk_preempt_disable();
+	memcpy(dst, &_uk_alloc_stats_global, sizeof(*dst));
+	uk_preempt_enable();
 }
-
-int posix_memalign(void **memptr, size_t align, size_t size)
-{
-	return uk_posix_memalign(uk_alloc_get_default(),
-				 memptr, align, size);
-}
-
-void *memalign(size_t align, size_t size)
-{
-	return uk_memalign(uk_alloc_get_default(), align, size);
-}
-
-void free(void *ptr)
-{
-	return uk_free(uk_alloc_get_default(), ptr);
-}
+#endif
