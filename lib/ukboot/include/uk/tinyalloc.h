@@ -34,6 +34,7 @@
 #define __LIBTINYALLOC_H__
 
 #include <uk/alloc.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
