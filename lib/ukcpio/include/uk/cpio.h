@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Authors: Simon Kuenzer <simon.kuenzer@neclab.eu>
+ * Authors: Robert Hrusecky <roberth@cs.utexas.edu>
+ *          Omar Jamil <omarj2898@gmail.com>
+ *          Sachin Beldona <sachinbeldona@utexas.edu>
  *
- *
- * Copyright (c) 2017, NEC Europe Ltd., NEC Corporation. All rights reserved.
+ * Copyright (c) 2017, The University of Texas at Austin. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,22 +31,48 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef __UK_CPIO_H__
+#define __UK_CPIO_H__
 
-#ifndef __SETUP_H__
-#define __SETUP_H__
+#include <stddef.h>
 
-#include <sys/types.h>
+#ifdef __cplusplus
+extern C {
+#endif /* __cplusplus */
 
-struct liblinuxuplat_memregion {
-	void *base;
-	size_t len;
+/**
+ * Include also the case of unsupported headers
+ */
+enum ukcpio_error {
+	UKCPIO_SUCCESS = 0,
+	UKCPIO_INVALID_HEADER,
+	UKCPIO_FILE_CREATE_FAILED,
+	UKCPIO_FILE_WRITE_FAILED,
+	UKCPIO_FILE_CHMOD_FAILED,
+	UKCPIO_FILE_CLOSE_FAILED,
+	UKCPIO_MKDIR_FAILED,
+	UKCPIO_MALFORMED_INPUT,
+	UKCPIO_NOMEM,
+	UKCPIO_NODEST
 };
 
-struct liblinuxuplat_opts {
-	struct liblinuxuplat_memregion heap;
-	struct liblinuxuplat_memregion initrd;
-};
+/**
+ * Extracts the given CPIO buffer to the path destination.
+ *
+ * @param dest
+ *  The path location where the buffer will be extracted to.
+ * @param buf
+ *  A pointer to the first header of the CPIO buffer.
+ * @param buflen
+ *  The size of the CPIO buffer.
+ * @return
+ *  Returns 0 on success or one of ukcpio_error enums.
+ */
+enum ukcpio_error
+ukcpio_extract(const char *dest, void *buf, size_t buflen);
 
-extern struct liblinuxuplat_opts _liblinuxuplat_opts;
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
-#endif /* __SETUP_H__ */
+#endif /* __CPIO_H__ */

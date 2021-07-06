@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Authors: Simon Kuenzer <simon.kuenzer@neclab.eu>
+ * Authors: Cristian Vijelie <cristianvijelie@gmail.com>
  *
- *
- * Copyright (c) 2017, NEC Europe Ltd., NEC Corporation. All rights reserved.
+ * Copyright (c) 2021, University Politehnica of Bucharest. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,23 +28,49 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#ifndef __SETUP_H__
-#define __SETUP_H__
+#ifndef __PLAT_CMN_X86_ACPI_H__
+#define __PLAT_CMN_X86_ACPI_H__
 
-#include <sys/types.h>
+#include <x86/acpi/sdt.h>
+#include <x86/acpi/madt.h>
 
-struct liblinuxuplat_memregion {
-	void *base;
-	size_t len;
-};
+struct RSDPDescriptor {
+	char Signature[8];
+	__u8 Checksum;
+	char OEMID[6];
+	__u8 Revision;
+	__u32 RsdtAddress;
+} __packed;
 
-struct liblinuxuplat_opts {
-	struct liblinuxuplat_memregion heap;
-	struct liblinuxuplat_memregion initrd;
-};
+struct RSDPDescriptor20 {
+	struct RSDPDescriptor v1;
 
-extern struct liblinuxuplat_opts _liblinuxuplat_opts;
+	__u32 Length;
+	__u64 XsdtAddress;
+	__u8 ExtendedChecksum;
+	__u8 Reserved[3];
+} __packed;
 
-#endif /* __SETUP_H__ */
+/* Error codes returned by acpi_init */
+#define ACPI_INVALID_TABLE      -1
+#define ACPI_NOT_IMPLEMENTED    -2
+
+/**
+ * Detect ACPI version and discover ACPI tables.
+ *
+ * @return 0 on success, one of the ACPI_* error codes otherwise.
+ */
+int acpi_init(void);
+
+/**
+ * Return the detected ACPI version.
+ *
+ * @return 0 if ACPI is not initialized or initialization failed, ACPI version
+ *    otherwise.
+ */
+int acpi_get_version(void);
+
+#endif /* __PLAT_CMN_X86_ACPI_H__ */

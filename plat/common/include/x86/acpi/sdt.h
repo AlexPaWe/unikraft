@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Authors: Simon Kuenzer <simon.kuenzer@neclab.eu>
+ * Authors: Cristian Vijelie <cristianvijelie@gmail.com>
  *
- *
- * Copyright (c) 2017, NEC Europe Ltd., NEC Corporation. All rights reserved.
+ * Copyright (c) 2021, University Politehnica of Bucharest. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,23 +28,35 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#ifndef __SETUP_H__
-#define __SETUP_H__
+#ifndef __PLAT_CMN_X86_SDT_H__
+#define __PLAT_CMN_X86_SDT_H__
 
-#include <sys/types.h>
+#include <uk/arch/types.h>
+#include <uk/essentials.h>
 
-struct liblinuxuplat_memregion {
-	void *base;
-	size_t len;
-};
+struct ACPISDTHeader {
+	char Signature[4];
+	__u32 Length;
+	__u8 Revision;
+	__u8 Checksum;
+	char OEMID[6];
+	char OEMTableID[8];
+	__u32 OEMRevision;
+	__u32 CreatorID;
+	__u32 CreatorRevision;
+} __packed;
 
-struct liblinuxuplat_opts {
-	struct liblinuxuplat_memregion heap;
-	struct liblinuxuplat_memregion initrd;
-};
+struct RSDT {
+	struct ACPISDTHeader h;
+	__u32 Entry[];
+} __packed;
 
-extern struct liblinuxuplat_opts _liblinuxuplat_opts;
+struct XSDT {
+	struct ACPISDTHeader h;
+	__u64 Entry[];
+} __packed;
 
-#endif /* __SETUP_H__ */
+#endif /* __PLAT_CMN_X86_SDT_H__ */

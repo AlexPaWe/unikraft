@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Authors: Simon Kuenzer <simon.kuenzer@neclab.eu>
+ * Authors: Cristian Vijelie <cristianvijelie@gmail.com>
  *
- *
- * Copyright (c) 2017, NEC Europe Ltd., NEC Corporation. All rights reserved.
+ * Copyright (c) 2021, University Politehnica of Bucharest. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,23 +28,36 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#ifndef __SETUP_H__
-#define __SETUP_H__
+#ifndef __PLAT_KVM_X86_DELAY_H__
+#define __PLAT_KVM_X86_DELAY_H__
 
-#include <sys/types.h>
+#include <x86/cpu.h>
 
-struct liblinuxuplat_memregion {
-	void *base;
-	size_t len;
-};
+/*
+ * Delay the execution for a given amount of microseconds/ milliseconds.
+ * The delay is not **exactly** as requested, but close enough to be viable
+ * in some cases. For precise delays a timer would be better suited.
+ */
 
-struct liblinuxuplat_opts {
-	struct liblinuxuplat_memregion heap;
-	struct liblinuxuplat_memregion initrd;
-};
+static inline void udelay(__u16 usec)
+{
+	const __u16 DELAY_PORT = 0x80;
 
-extern struct liblinuxuplat_opts _liblinuxuplat_opts;
+	while (usec--)
+		/*
+		 * Writing to the 0x80 port has no effect, and takes
+		 * approximately 1us
+		 */
+		outb(DELAY_PORT, 1);
+}
 
-#endif /* __SETUP_H__ */
+static inline void mdelay(__u16 msec)
+{
+	while (msec--)
+		udelay(1000);
+}
+
+#endif /* __PLAT_KVM_X86_DELAY_H__ */
