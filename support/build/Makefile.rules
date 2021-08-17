@@ -299,6 +299,14 @@ build_clean = $(1)
 endif
 endif
 
+# Helper that generates a command for validating a checksum for
+# a given file. The command returns 1 on a checksum mismatch.
+#
+# chksum_cmd $algorithm(MD5,SHA1,SHA256,SHA512), $libname, $sourcefile, $chksum
+define chksum_cmd =
+$(call verbose_cmd,$(1),$(2)':' $(notdir $(3)), \
+  if ! [[ "`$($(1)SUM) - < "$(3)"`" =~ ^$(call qstrip,$(4))[[:space:]] ]]; then echo "$(3): $(1) checksum validation failed" 1>&2; exit 1; fi )
+endef
 
 #################################################
 #
@@ -310,9 +318,9 @@ endif
 # extracts an archive to LIBRARY_BUILD/origin
 # On success, creates LIBRARY_BUILD/.origin file
 #
-# _extractorigin_* $libname,$archive_fname
+# _extractorigin_* $libname,$archive_fname,$extra_deps(optional)
 define _extracttoorigin_tgz =
-$(BUILD_DIR)/$(1)/.origin: $(2)
+$(BUILD_DIR)/$(1)/.origin: $(2) $(3)
 	$(call verbose_cmd,UNTAR,$(1)':' $(notdir $(2)), \
 	  $(TAR) -xzf $(2) \
 	         -C $(BUILD_DIR)/$(1)/origin && \
@@ -320,7 +328,7 @@ $(BUILD_DIR)/$(1)/.origin: $(2)
 endef
 
 define _extracttoorigin_tgz_xz =
-$(BUILD_DIR)/$(1)/.origin: $(2)
+$(BUILD_DIR)/$(1)/.origin: $(2) $(3)
 	$(call verbose_cmd,UNTAR,$(1)':' $(notdir $(2)), \
 	  $(TAR) -xJf $(2) \
 	         -C $(BUILD_DIR)/$(1)/origin && \
@@ -328,7 +336,7 @@ $(BUILD_DIR)/$(1)/.origin: $(2)
 endef
 
 define _extracttoorigin_tgz_bz2 =
-$(BUILD_DIR)/$(1)/.origin: $(2)
+$(BUILD_DIR)/$(1)/.origin: $(2) $(3)
 	$(call verbose_cmd,UNTAR,$(1)':' $(notdir $(2)), \
 	  $(TAR) -xjf $(2) \
 	         -C $(BUILD_DIR)/$(1)/origin && \
@@ -336,7 +344,7 @@ $(BUILD_DIR)/$(1)/.origin: $(2)
 endef
 
 define _extracttoorigin_zip =
-$(BUILD_DIR)/$(1)/.origin: $(2)
+$(BUILD_DIR)/$(1)/.origin: $(2) $(3)
 	$(call verbose_cmd,UNZIP,$(1)':' $(notdir $(2)), \
 	  $(UNZIP) -d $(BUILD_DIR)/$(1)/origin \
 		   $(2) && \
@@ -365,17 +373,43 @@ endef
 # A variable called LIB[LIBNAME]_ORIGIN is initialized with
 # the path to the extracted files
 #
-# unarchive $libname,$archive_fname,$dir_with_patches(optional)
+# unarchive $libname,$archive_fname,$dir_with_patches(optional),$extra_deps(optional)
 define unarchive =
-$(if $(filter %.tar.gz %.tgz,$(2)),$(call _extracttoorigin_tgz,$(1),$(2)),\
-$(if $(filter %.tar.xz %.txz,$(2)),$(call _extracttoorigin_tgz_xz,$(1),$(2)),\
-$(if $(filter %.tar.bz2 %.tbz2,$(2)),$(call _extracttoorigin_tgz_bz2,$(1),$(2)),\
-$(if $(filter %.zip,$(2)),$(call          _extracttoorigin_zip,$(1),$(2)),\
+$(if $(filter %.tar.gz %.tgz,$(2)),$(call _extracttoorigin_tgz,$(1),$(2),$(4)),\
+$(if $(filter %.tar.xz %.txz,$(2)),$(call _extracttoorigin_tgz_xz,$(1),$(2),$(4)),\
+$(if $(filter %.tar.bz2 %.tbz2,$(2)),$(call _extracttoorigin_tgz_bz2,$(1),$(2),$(4)),\
+$(if $(filter %.zip,$(2)),$(call          _extracttoorigin_zip,$(1),$(2),$(4)),\
 $(error $(2): missing extraction rule for archive type)\
 ))))
 UK_FETCH-y += $(BUILD_DIR)/$(1)/.origin \
 $(eval $(call vprefix_lib,$(1),ORIGIN) = $(BUILD_DIR)/$(1)/origin)
 $(call mk_sub_build_dir,$(1)/origin)
+endef
+
+# Internal helper to compute and compare a checksum of a downloaded file
+# (see: fetch(as)[2])
+# This command picks up the checksum for comparison from the library-local
+# variable LIBNAME_ORIGIN_[MD5|SHA1|...]. It generates a rule that tests
+# only given and supported checksums.
+# NOTE: The variable containing the checksum need to be defined
+# before calling `fetch`, `fetch2`, `fetchas`, or `fetchas2`.
+#
+# _chksum_origin $libname, $file, $status_ok
+define _chksum_origin =
+$(3): $(2)
+	$(if $(filter $(call vprefix_lib,$(1),ORIGIN_SHA1),$(.VARIABLES)), \
+		$(call chksum_cmd,SHA1,$(1),$(2),$($(call vprefix_lib,$(1),ORIGIN_SHA1))) \
+	)
+	$(if $(filter $(call vprefix_lib,$(1),ORIGIN_SHA256),$(.VARIABLES)), \
+		$(call chksum_cmd,SHA256,$(1),$(2),$($(call vprefix_lib,$(1),ORIGIN_SHA256))) \
+	)
+	$(if $(filter $(call vprefix_lib,$(1),ORIGIN_SHA512),$(.VARIABLES)), \
+		$(call chksum_cmd,SHA512,$(1),$(2),$($(call vprefix_lib,$(1),ORIGIN_SHA512))) \
+	)
+	$(if $(filter $(call vprefix_lib,$(1),ORIGIN_MD5),$(.VARIABLES)), \
+		$(call chksum_cmd,MD5,$(1),$(2),$($(call vprefix_lib,$(1),ORIGIN_MD5))) \
+	)
+	@$(TOUCH) $(3)
 endef
 
 # Downloads an archive from remote and invokes unarchive. The target filename
@@ -387,13 +421,37 @@ $(BUILD_DIR)/$(1)/$(3):
 	 $(WGET) -q --show-progress --progress=bar -O $(BUILD_DIR)/$(1)/$(3) $(2) || \
 	 $(RM) $(BUILD_DIR)/$(1)/$(3))
 
-$(call unarchive,$(1),$(BUILD_DIR)/$(1)/$(3),$(4))
+$(call _chksum_origin,$(1),$(BUILD_DIR)/$(1)/$(3),$(BUILD_DIR)/$(1)/.chksum)
+$(call unarchive,$(1),$(BUILD_DIR)/$(1)/$(3),$(4),$(BUILD_DIR)/$(1)/.chksum)
+
+UK_FETCH-y += $(BUILD_DIR)/$(1)/.chksum
+endef
+
+# fetchas2 works like fetchas but supports a secondary URL
+# fetchas2 $libname,$url,$url2,$target_fname(no_path!),$dir_with_patches(optional)
+define fetchas2 =
+$(BUILD_DIR)/$(1)/$(4):
+	$(call verbose_cmd,WGET,$(1)':' $(2) [retry-with: $(3)], \
+	 $(WGET) -q --show-progress --progress=bar -O $(BUILD_DIR)/$(1)/$(4) $(2) || \
+	 $(WGET) -q --show-progress --progress=bar -O $(BUILD_DIR)/$(1)/$(4) $(3) || \
+	 $(RM) $(BUILD_DIR)/$(1)/$(4))
+
+$(call _chksum_origin,$(1),$(BUILD_DIR)/$(1)/$(4),$(BUILD_DIR)/$(1)/.chksum)
+$(call unarchive,$(1),$(BUILD_DIR)/$(1)/$(4),$(5),$(BUILD_DIR)/$(1)/.chksum)
+
+UK_FETCH-y += $(BUILD_DIR)/$(1)/.chksum
 endef
 
 # Downloads an archive from remote and invokes unarchive
 # fetch $libname,$url,$dir_with_patches(optional)
 define fetch =
 $(call fetchas,$(1),$(2),$(notdir $(2)),$(3))
+endef
+
+# fetch2 works like fetch but supports a secondary URL
+# fetch2 $libname,$url,$url2,$dir_with_patches(optional)
+define fetch2 =
+$(call fetchas2,$(1),$(2),$(3),$(notdir $(2)),$(4))
 endef
 
 
@@ -416,7 +474,7 @@ $(4): $(2) | preprocess
 		       $$($(call vprefix_lib,$(1),ASINCLUDES)) $$($(call vprefix_lib,$(1),ASINCLUDES-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES)) $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES-y)) \
 		       $$($(call vprefix_glb,$(3),ARCHFLAGS)) $$($(call vprefix_glb,$(3),ARCHFLAGS-y)) \
-		       $$(ASFLAGS) $$(ASFLAGS-y) \
+		       $$(ASFLAGS) $$(ASFLAGS-y) $$(ASFLAGS_EXTRA) \
 		       $$($(call vprefix_lib,$(1),ASFLAGS)) $$($(call vprefix_lib,$(1),ASFLAGS-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),FLAGS)) $$($(call vprefix_src,$(1),$(2),$(3),FLAGS-y)) \
 		       $(5) \
@@ -443,7 +501,7 @@ $(4): $(2) | preprocess
 		       $$($(call vprefix_lib,$(1),ASINCLUDES)) $$($(call vprefix_lib,$(1),ASINCLUDES-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES)) $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES-y)) \
 		       $$($(call vprefix_glb,$(3),ARCHFLAGS)) $$($(call vprefix_glb,$(3),ARCHFLAGS-y)) \
-		       $$(ASFLAGS) $$(ASFLAGS-y) \
+		       $$(ASFLAGS) $$(ASFLAGS-y) $$(ASFLAGS_EXTRA) \
 		       $$($(call vprefix_lib,$(1),ASFLAGS)) $$($(call vprefix_lib,$(1),ASFLAGS-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),FLAGS)) $$($(call vprefix_src,$(1),$(2),$(3),FLAGS-y)) \
 		       $(5) \
@@ -468,7 +526,7 @@ $(4): $(2) | preprocess
 		       $$($(call vprefix_lib,$(1),CINCLUDES)) $$($(call vprefix_lib,$(1),CINCLUDES-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES)) $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES-y)) \
 		       $$($(call vprefix_glb,$(3),ARCHFLAGS)) $$($(call vprefix_glb,$(3),ARCHFLAGS-y)) \
-		       $$(CFLAGS) $$(CFLAGS-y) \
+		       $$(CFLAGS) $$(CFLAGS-y) $$(CFLAGS_EXTRA) \
 		       $$($(call vprefix_lib,$(1),CFLAGS)) $$($(call vprefix_lib,$(1),CFLAGS-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),FLAGS)) $$($(call vprefix_src,$(1),$(2),$(3),FLAGS-y)) \
 		       $(5) \
@@ -492,7 +550,7 @@ $(4): $(2) | preprocess
 		       $$($(call vprefix_lib,$(1),CXXINCLUDES)) $$($(call vprefix_lib,$(1),CXXINCLUDES-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES)) $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES-y)) \
 		       $$($(call vprefix_glb,$(3),ARCHFLAGS)) $$($(call vprefix_glb,$(3),ARCHFLAGS-y)) \
-		       $$(CXXFLAGS) $$(CXXFLAGS-y) \
+		       $$(CXXFLAGS) $$(CXXFLAGS-y) $$(CXXFLAGS_EXTRA) \
 		       $$($(call vprefix_lib,$(1),CXXFLAGS)) $$($(call vprefix_lib,$(1),CXXFLAGS-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),FLAGS)) $$($(call vprefix_src,$(1),$(2),$(3),FLAGS-y)) \
 		       $(5) \
@@ -516,21 +574,15 @@ buildrule_CPP = $(call buildrule_cxx,$(1),$(2),$(3),$(4))
 buildrule_C   = $(call buildrule_cxx,$(1),$(2),$(3),$(4))
 buildrule_c$(plus)$(plus) = $(call buildrule_cxx,$(1),$(2),$(3),$(4))
 
-define buildrule_go =
+# NOTE: We are not using most of the flags such as COMPFLAGS due to incompatibilities between rustc and GCC.
+define buildrule_rs =
 $(4): $(2) | preprocess
-	$(call build_cmd,GOC,$(1),$(4),\
-		$(GOC) $$(COMPFLAGS) $$(COMPFLAGS-y) \
-		       $$(GOCINCLUDES) $$(GOCINCLUDES-y) \
-		       $$($(call vprefix_lib,$(1),GOCINCLUDES)) $$($(call vprefix_lib,$(1),GOCINCLUDES-y)) \
-		       $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES)) $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES-y)) \
-		       $$($(call vprefix_glb,$(3),ARCHFLAGS)) $$($(call vprefix_glb,$(3),ARCHFLAGS-y)) \
-		       $$(GOCFLAGS) $$(GOCFLAGS-y) \
-		       $$($(call vprefix_lib,$(1),GOCFLAGS)) $$($(call vprefix_lib,$(1),GOCFLAGS-y)) \
-		       $$($(call vprefix_src,$(1),$(2),$(3),FLAGS)) $$($(call vprefix_src,$(1),$(2),$(3),FLAGS-y)) \
-		       $(5) \
-		       $$(DBGFLAGS) $$(DBGFLAGS-y) \
-		       -D__LIBNAME__=$(1) -D__BASENAME__=$(notdir $(2)) $(if $(3),-D__VARIANT__=$(3)) \
-		       -c $(2) -o $(4) $(call depflags,$(4))
+	$(call build_cmd,RUSTC,$(1),$(4),\
+		$(RUSTC) $$(RUSTCFLAGS) $$(RUSTCFLAGS-y) $$(RUSTCFLAGS_EXTRA) \
+			$$($(call vprefix_lib,$(1),RUSTCFLAGS)) $$($(call vprefix_lib,$(1),RUSTCFLAGS-y)) \
+			$$($(call vprefix_src,$(1),$(2),$(3),FLAGS)) $$($(call vprefix_src,$(1),$(2),$(3),FLAGS-y)) \
+			--cfg '__LIBNAME__="$(1)"' --cfg '__BASENAME__="$(notdir $(2))"' $(if $(3),--cfg '__VARIANT__="$(3)"') \
+			$(2) -o $(4)
 	)
 
 UK_SRCS-y += $(2)
@@ -556,7 +608,7 @@ $(4): $(2) | preprocess
 		       $$($(call vprefix_lib,$(1),ASINCLUDES)) $$($(call vprefix_lib,$(1),ASINCLUDES-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES)) $$($(call vprefix_src,$(1),$(2),$(3),INCLUDES-y)) \
 		       $$(ARCHFLAGS) $$(ARCHFLAGS-y) \
-		       $$(ASFLAGS) $$(ASFLAGS-y) \
+		       $$(ASFLAGS) $$(ASFLAGS-y) $$(ASFLAGS_EXTRA) \
 		       $$($(call vprefix_lib,$(1),ASFLAGS)) $$($(call vprefix_lib,$(1),ASFLAGS-y)) \
 		       $$($(call vprefix_src,$(1),$(2),$(3),FLAGS)) $$($(call vprefix_src,$(1),$(2),$(3),FLAGS-y)) \
 		       $(5) \
@@ -660,7 +712,7 @@ $(3): $(2) | prepare
 		$(M4)  $$(M4INCLUDES) $$(M4INCLUDES-y) \
 		       $$($(call vprefix_lib,$(1),M4INCLUDES)) $$($(call vprefix_lib,$(1),M4INCLUDES-y)) \
 		       $$($(call vprefix_src,$(1),$(2),,M4INCLUDES)) $$($(call vprefix_src,$(1),$(2),,M4INCLUDES-y)) \
-		       $$(M4FLAGS) $$(M4FLAGS-y) \
+		       $$(M4FLAGS) $$(M4FLAGS-y) $$(M4FLAGS_EXTRA) \
 		       $$($(call vprefix_lib,$(1),M4FLAGS)) $$($(call vprefix_lib,$(1),M4FLAGS-y)) \
 		       $$($(call vprefix_src,$(1),$(2),,M4FLAGS)) $$($(call vprefix_src,$(1),$(2),,M4FLAGS-y)) \
 		       $(4) \
