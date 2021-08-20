@@ -35,6 +35,12 @@
 #ifndef __UK_SYSCALL_H__
 #define __UK_SYSCALL_H__
 
+#ifndef UK_DEBUG_TRACE
+#define UK_DEBUG_TRACE
+#endif
+
+#include <uk/trace.h>
+
 #include <uk/config.h>
 #include <uk/essentials.h>
 #include <uk/errptr.h>
@@ -63,7 +69,11 @@ extern "C" {
 #define __uk_scc(X) ((long) (X))
 typedef long uk_syscall_arg_t;
 
+UK_TRACEPOINT(trace_syscall_shim, "%d", int)
+UK_TRACEPOINT(trace_syscall, "%p", void*)
+
 #define __uk_syscall_fn(syscall_nr, ...) \
+	trace_syscall_shim(syscall_nr) \
 	UK_CONCAT(uk_syscall_fn_, syscall_nr) (__VA_ARGS__)
 #define __uk_syscall_r_fn(syscall_nr, ...) \
 	UK_CONCAT(uk_syscall_r_fn_, syscall_nr) (__VA_ARGS__)
@@ -198,6 +208,7 @@ typedef long uk_syscall_arg_t;
 	long rname(UK_ARG_MAPx(x, UK_S_ARG_LONG, __VA_ARGS__));		\
 	long ename(UK_ARG_MAPx(x, UK_S_ARG_LONG, __VA_ARGS__))		\
 	{								\
+		trace_syscall(name);                                    \
 		long ret = rname(					\
 			UK_ARG_MAPx(x, UK_S_ARG_CAST_LONG, __VA_ARGS__)); \
 		if (ret < 0 && PTRISERR(ret)) {				\
