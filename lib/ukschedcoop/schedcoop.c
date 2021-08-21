@@ -35,6 +35,10 @@
 #include <uk/sched.h>
 #include <uk/schedcoop.h>
 
+#include <uk/trace.h>
+
+UK_TRACEPOINT(trace_yield, "%p", void*)
+
 struct schedcoop_private {
 	struct uk_thread_list thread_list;
 	struct uk_thread_list sleeping_threads;
@@ -221,6 +225,7 @@ static void idle_thread_fn(void *unused __unused)
 
 static void schedcoop_yield(struct uk_sched *s)
 {
+    trace_yield(s)
 	schedcoop_schedule(s);
 }
 
