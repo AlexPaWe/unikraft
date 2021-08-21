@@ -225,7 +225,7 @@ static void idle_thread_fn(void *unused __unused)
 
 static void schedcoop_yield(struct uk_sched *s)
 {
-    trace_yield(s)
+    trace_yield(s);
 	schedcoop_schedule(s);
 }
 
