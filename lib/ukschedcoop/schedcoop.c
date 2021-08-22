@@ -37,6 +37,7 @@
 
 #include <uk/trace.h>
 
+UK_TRACEPOINT(trace_idle_started, "Current thread: %p", void*)
 UK_TRACEPOINT(trace_yield, "%p", void*)
 
 struct schedcoop_private {
@@ -215,6 +216,7 @@ static void idle_thread_fn(void *unused __unused)
 	struct uk_sched *s = current->sched;
 
 	s->threads_started = true;
+	trace_idle_started(current);
 	ukplat_lcpu_enable_irq();
 
 	while (1) {
