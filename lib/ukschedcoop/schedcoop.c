@@ -37,8 +37,10 @@
 
 #include <uk/trace.h>
 
-UK_TRACEPOINT(trace_idle_started, "Current thread: %p", void*)
-UK_TRACEPOINT(trace_yield, "%p", void*)
+UK_TRACEPOINT(trace_idle_started, "Current thread: %p", void*);
+UK_TRACEPOINT(trace_yield, "%p", void*);
+UK_TRACEPOINT(trace_thread_wake, "Thread woken up. %p", void*);
+UK_TRACEPOINT(trace_thread_switch, "Previous: %p to Next: %p", void*, void*);
 
 struct schedcoop_private {
 	struct uk_thread_list thread_list;
@@ -89,6 +91,7 @@ static void schedcoop_schedule(struct uk_sched *s)
 				      thread_list, tmp) {
 
 			if (thread->wakeup_time && thread->wakeup_time <= now)
+				trace_thread_wake(thread);
 				uk_thread_wake(thread);
 
 			else if (thread->wakeup_time < min_wakeup_time)
@@ -131,6 +134,7 @@ static void schedcoop_schedule(struct uk_sched *s)
 	 * interrupted at the return instruction. And therefore at safe point.
 	 */
 	if (prev != next)
+		trace_thread_switch(prev, next);
 		uk_sched_thread_switch(s, prev, next);
 
 	UK_TAILQ_FOREACH_SAFE(thread, &s->exited_threads, thread_list, tmp) {
