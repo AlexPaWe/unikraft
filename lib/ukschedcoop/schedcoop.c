@@ -221,7 +221,7 @@ static void idle_thread_fn(void *unused __unused)
 	struct uk_sched *s = current->sched;
 
 	s->threads_started = true;
-	/*trace_idle_started(current);*/
+	trace_idle_started(current);
 	ukplat_lcpu_enable_irq();
 
 	while (1) {
