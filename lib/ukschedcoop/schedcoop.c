@@ -134,7 +134,7 @@ static void schedcoop_schedule(struct uk_sched *s)
 	 * interrupted at the return instruction. And therefore at safe point.
 	 */
 	if (prev != next) {
-		trace_thread_switch(prev, next);
+		/*trace_thread_switch(prev, next);*/
 		uk_sched_thread_switch(s, prev, next);
 	}
 
@@ -221,7 +221,7 @@ static void idle_thread_fn(void *unused __unused)
 	struct uk_sched *s = current->sched;
 
 	s->threads_started = true;
-	trace_idle_started(current);
+	/*trace_idle_started(current);*/
 	ukplat_lcpu_enable_irq();
 
 	while (1) {
