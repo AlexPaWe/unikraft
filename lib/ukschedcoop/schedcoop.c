@@ -90,11 +90,11 @@ static void schedcoop_schedule(struct uk_sched *s)
 		UK_TAILQ_FOREACH_SAFE(thread, &prv->sleeping_threads,
 				      thread_list, tmp) {
 
-			if (thread->wakeup_time && thread->wakeup_time <= now)
+			if (thread->wakeup_time && thread->wakeup_time <= now) {
 				trace_thread_wake(thread);
 				uk_thread_wake(thread);
 
-			else if (thread->wakeup_time < min_wakeup_time)
+			} else if (thread->wakeup_time < min_wakeup_time)
 				min_wakeup_time = thread->wakeup_time;
 		}
 
@@ -133,9 +133,10 @@ static void schedcoop_schedule(struct uk_sched *s)
 	/* Interrupting the switch is equivalent to having the next thread
 	 * interrupted at the return instruction. And therefore at safe point.
 	 */
-	if (prev != next)
+	if (prev != next) {
 		trace_thread_switch(prev, next);
 		uk_sched_thread_switch(s, prev, next);
+	}
 
 	UK_TAILQ_FOREACH_SAFE(thread, &s->exited_threads, thread_list, tmp) {
 		if (!thread->detached)
