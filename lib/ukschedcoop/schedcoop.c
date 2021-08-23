@@ -40,7 +40,7 @@
 UK_TRACEPOINT(trace_idle_started, "Current thread: %p", void*);
 UK_TRACEPOINT(trace_yield, "%p", void*);
 UK_TRACEPOINT(trace_thread_wake, "Thread woken up. %p", void*);
-UK_TRACEPOINT(trace_thread_switch, "Previous: %p to Next: %p", void*, void*);
+UK_TRACEPOINT(trace_thread_switch, "Thread switched");
 
 struct schedcoop_private {
 	struct uk_thread_list thread_list;
@@ -134,8 +134,8 @@ static void schedcoop_schedule(struct uk_sched *s)
 	 * interrupted at the return instruction. And therefore at safe point.
 	 */
 	if (prev != next) {
-		trace_thread_switch(prev, next);
 		uk_sched_thread_switch(s, prev, next);
+		trace_thread_switch();
 	}
 
 	UK_TAILQ_FOREACH_SAFE(thread, &s->exited_threads, thread_list, tmp) {
