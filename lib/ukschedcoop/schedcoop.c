@@ -134,7 +134,7 @@ static void schedcoop_schedule(struct uk_sched *s)
 	 * interrupted at the return instruction. And therefore at safe point.
 	 */
 	if (prev != next) {
-		/*trace_thread_switch(prev, next);*/
+		trace_thread_switch(prev, next);
 		uk_sched_thread_switch(s, prev, next);
 	}
 
