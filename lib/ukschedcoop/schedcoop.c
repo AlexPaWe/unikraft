@@ -135,7 +135,7 @@ static void schedcoop_schedule(struct uk_sched *s)
 	 */
 	if (prev != next) {
 		uk_sched_thread_switch(s, prev, next);
-		trace_thread_switch((char*) prev->name, (char*) next->name);
+		/*trace_thread_switch((char*) prev->name, (char*) next->name);*/
 	}
 
 	UK_TAILQ_FOREACH_SAFE(thread, &s->exited_threads, thread_list, tmp) {
