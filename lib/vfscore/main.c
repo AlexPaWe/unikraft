@@ -595,7 +595,7 @@ out_error:
 
 LFS64(pwritev);
 
-UK_TRACEPOINT(trace_vfs_writev, "%d %p 0x%x 0x%x", int, const struct iovec*,
+UK_TRACEPOINT(trace_vfs_writev, "%d %p 0x%x", int, const struct iovec*,
 	      int);
 UK_TRACEPOINT(trace_vfs_writev_ret, "0x%x", ssize_t);
 UK_TRACEPOINT(trace_vfs_writev_err, "%d", int);
