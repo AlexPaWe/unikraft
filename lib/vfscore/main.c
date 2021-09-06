@@ -518,7 +518,7 @@ ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset)
 
 LFS64(pwrite);
 
-UK_TRACEPOINT(trace_vfs_write, "%d %p 0x%x 0x%x", int, const void *,
+UK_TRACEPOINT(trace_vfs_write, "%d %p 0x%x", int, const void *,
 	      size_t);
 UK_TRACEPOINT(trace_vfs_write_ret, "0x%x", ssize_t);
 UK_TRACEPOINT(trace_vfs_write_err, "%d", int);
@@ -595,7 +595,7 @@ out_error:
 
 LFS64(pwritev);
 
-//UK_TRACEPOINT(trace_vfs_writev, "%d %p 0x%x", int, const struct iovec *, int);
+UK_TRACEPOINT(trace_vfs_writev, "%d %p 0x%x", int, const struct iovec *, int);
 UK_TRACEPOINT(trace_vfs_writev_ret, "0x%x", ssize_t);
 UK_TRACEPOINT(trace_vfs_writev_err, "%d", int);
 
@@ -606,7 +606,7 @@ UK_SYSCALL_R_DEFINE(ssize_t, writev,
 	ssize_t bytes;
 	int error;
 
-	//trace_vfs_writev(fd, vec, vlen);
+	trace_vfs_writev(fd, vec, vlen);
 	error = fget(fd, &fp);
 	if (error) {
 		error = -error;
