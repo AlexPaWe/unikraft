@@ -59,7 +59,7 @@ class tp_sample:
         return (("%016d %s: " % (self.time, self.tp.name)) +
                  (self.tp.fmt % self.args))
     def tabulate_fmt(self):
-        return [self.time, self.tp.name, (self.tp.fmt % self.args)]
+        return [self.time, self.tp.name]
 
 class EndOfBuffer(Exception):
     pass
@@ -94,11 +94,12 @@ class sample_parser:
         except EndOfBuffer:
             raise StopIteration
 
-        magic = magic.decode()
+        magic = magic.decode('latin-1')
         if (magic != TP_HEADER_MAGIC):
             raise StopIteration
 
         tp = self.tps[cookie]
+        print("{} {}\n".format(tp.name, tp.args_nr))
         args = []
         for i in range(tp.args_nr):
             if tp.types[i] == UK_TRACE_ARG_STRING:
