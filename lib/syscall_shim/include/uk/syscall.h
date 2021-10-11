@@ -208,7 +208,7 @@ UK_TRACEPOINT(trace_syscall, "%p", void*)
 	long rname(UK_ARG_MAPx(x, UK_S_ARG_LONG, __VA_ARGS__));		\
 	long ename(UK_ARG_MAPx(x, UK_S_ARG_LONG, __VA_ARGS__))		\
 	{								\
-		/*trace_syscall(name);*/                                    \
+		trace_syscall(name);                                    \
 		long ret = rname(					\
 			UK_ARG_MAPx(x, UK_S_ARG_CAST_LONG, __VA_ARGS__)); \
 		if (ret < 0 && PTRISERR(ret)) {				\
