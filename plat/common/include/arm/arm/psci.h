@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Authors: Costin Lupu <costin.lupu@cs.pub.ro>
- *          Simon Kuenzer <simon.kuenzer@neclab.eu>
+ * Authors: Jia He <justin.he@arm.com>
+ *          Răzvan Vîrtan <virtanrazvan@gmail.com>
  *
- * Copyright (c) 2017, NEC Europe Ltd., NEC Corporation. All rights reserved.
+ * Copyright (c) 2021, Arm Ltd., University Politehnica of Bucharest. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,30 +31,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __UKPLAT_TIME_H__
-#define __UKPLAT_TIME_H__
+#ifndef __ARM_PSCI_H__
+#define __ARM_PSCI_H__
 
-#include <uk/arch/time.h>
-#include <stdint.h>
+/*
+ * PSCI function codes (as per PSCI v0.2).
+ */
+#define PSCI_FNID_VERSION               0x84000000
+#define PSCI_FNID_CPU_SUSPEND           0x84000001
+#define PSCI_FNID_CPU_OFF               0x84000002
+#define PSCI_FNID_CPU_ON                0x84000003
+#define PSCI_FNID_AFFINITY_INFO         0x84000004
+#define PSCI_FNID_MIGRATE               0x84000005
+#define PSCI_FNID_MIGRATE_INFO_TYPE     0x84000006
+#define PSCI_FNID_MIGRATE_INFO_UP_CPU   0x84000007
+#define PSCI_FNID_SYSTEM_OFF            0x84000008
+#define PSCI_FNID_SYSTEM_RESET          0x84000009
+#define PSCI_FNID_FEATURES              0x8400000a
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void ukplat_time_init(void);
-void ukplat_time_fini(void);
-uint32_t ukplat_time_get_irq(void);
-
-__nsec ukplat_time_get_ticks(void);
-__nsec ukplat_monotonic_clock(void);
-__nsec ukplat_wall_clock(void);
-
-/* Time tick length */
-#define UKPLAT_TIME_TICK_NSEC  (UKARCH_NSEC_PER_SEC / CONFIG_HZ)
-#define UKPLAT_TIME_TICK_MSEC  ukarch_time_nsec_to_msec(UKPLAT_TIME_TICK_NSEC)
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* __UKPLAT_TIME_H__ */
+#endif /* __ARM_PSCI_H__ */

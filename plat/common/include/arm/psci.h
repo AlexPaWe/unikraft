@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Authors: Costin Lupu <costin.lupu@cs.pub.ro>
- *          Simon Kuenzer <simon.kuenzer@neclab.eu>
+ * Authors: Jia He <justin.he@arm.com>
+ *          Răzvan Vîrtan <virtanrazvan@gmail.com>
  *
- * Copyright (c) 2017, NEC Europe Ltd., NEC Corporation. All rights reserved.
+ * Copyright (c) 2021, Arm Ltd., University Politehnica of Bucharest. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,30 +31,33 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __UKPLAT_TIME_H__
-#define __UKPLAT_TIME_H__
+#ifndef __PLAT_CMN_ARM_PSCI_H__
+#define __PLAT_CMN_ARM_PSCI_H__
 
-#include <uk/arch/time.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
+#if defined(__ARM_64__)
+#include "arm64/psci.h"
+#else
+#include "arm/psci.h"
 #endif
 
-void ukplat_time_init(void);
-void ukplat_time_fini(void);
-uint32_t ukplat_time_get_irq(void);
+enum psci_function {
+	PSCI_FN_CPU_SUSPEND,
+	PSCI_FN_CPU_ON,
+	PSCI_FN_CPU_OFF,
+	PSCI_FN_MIGRATE,
+	PSCI_FN_MAX,
+};
 
-__nsec ukplat_time_get_ticks(void);
-__nsec ukplat_monotonic_clock(void);
-__nsec ukplat_wall_clock(void);
+/* PSCI return values (inclusive of all PSCI versions) */
+#define PSCI_RET_SUCCESS             0
+#define PSCI_RET_NOT_SUPPORTED      -1
+#define PSCI_RET_INVALID_PARAMS     -2
+#define PSCI_RET_DENIED             -3
+#define PSCI_RET_ALREADY_ON         -4
+#define PSCI_RET_ON_PENDING         -5
+#define PSCI_RET_INTERNAL_FAILURE   -6
+#define PSCI_RET_NOT_PRESENT        -7
+#define PSCI_RET_DISABLED           -8
+#define PSCI_RET_INVALID_ADDRESS    -9
 
-/* Time tick length */
-#define UKPLAT_TIME_TICK_NSEC  (UKARCH_NSEC_PER_SEC / CONFIG_HZ)
-#define UKPLAT_TIME_TICK_MSEC  ukarch_time_nsec_to_msec(UKPLAT_TIME_TICK_NSEC)
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* __UKPLAT_TIME_H__ */
+#endif /* __PLAT_CMN_ARM_PSCI_H__ */
