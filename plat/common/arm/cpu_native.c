@@ -34,7 +34,7 @@
 #if !CONFIG_ARCH_ARM_32
 /* TODO: Not yet supported for Arm32 */
 #include <uk/plat/common/irq.h>
-#include <arm/cpu_defs.h>
+#include <arm/psci.h>
 #endif
 #include <uk/assert.h>
 
