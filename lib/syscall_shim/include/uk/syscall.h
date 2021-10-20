@@ -70,8 +70,8 @@ extern "C" {
 typedef long uk_syscall_arg_t;
 
 UK_TRACEPOINT(trace_syscall_shim, "%d", int)
-UK_TRACEPOINT(trace_syscall_start, "%s %d", char*, long int)
-UK_TRACEPOINT(trace_syscall_end, "%s %d", char*, long int)
+UK_TRACEPOINT(trace_syscall_start, "%s %d", char*, int)
+UK_TRACEPOINT(trace_syscall_end, "%s %d", char*, int)
 
 #define __uk_syscall_fn(syscall_nr, ...) \
 	trace_syscall_shim(syscall_nr) \
@@ -209,7 +209,7 @@ UK_TRACEPOINT(trace_syscall_end, "%s %d", char*, long int)
 	long rname(UK_ARG_MAPx(x, UK_S_ARG_LONG, __VA_ARGS__));		\
 	long ename(UK_ARG_MAPx(x, UK_S_ARG_LONG, __VA_ARGS__))		\
 	{								\
-		long int identifier = random();				\
+		int identifier = rand();				\
 		char* syscallname = uk_syscall_name(x);                 \
 		trace_syscall_start(syscallname, identifier);           \
 		long ret = rname(					\
