@@ -209,12 +209,12 @@ UK_TRACEPOINT(trace_syscall_end, "%s %d", char*, long int)
 	long rname(UK_ARG_MAPx(x, UK_S_ARG_LONG, __VA_ARGS__));		\
 	long ename(UK_ARG_MAPx(x, UK_S_ARG_LONG, __VA_ARGS__))		\
 	{								\
-		long int identifier = random();				\
+		/*long int identifier = random();				\
 		char* syscallname = uk_syscall_name(x);                 \
-		trace_syscall_start(syscallname, identifier);           \
+		trace_syscall_start(syscallname, identifier);           \*/
 		long ret = rname(					\
 			UK_ARG_MAPx(x, UK_S_ARG_CAST_LONG, __VA_ARGS__)); \
-		trace_syscall_end(syscallname, identifier);             \
+		/*trace_syscall_end(syscallname, identifier);             \*/
 		if (ret < 0 && PTRISERR(ret)) {				\
 			errno = -(int) PTR2ERR(ret);			\
 			return -1;					\
